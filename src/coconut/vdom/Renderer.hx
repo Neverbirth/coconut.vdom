@@ -42,6 +42,10 @@ private class DomCursor extends Cursor<Node> {
   override public function current()
     return cur;
 
+  #if coconut.vdom.ignore_translators
+  public function insert(real:Node)
+    place(real);
+  #else
   public function insert(real:Node) {
     if (wasReplaced(real))
       switch translationAhead() {
@@ -61,6 +65,7 @@ private class DomCursor extends Cursor<Node> {
     untyped real.__coconutText = if (real.nodeType == Node.TEXT_NODE) real.nodeValue else true;
     place(real);
   }
+  #end
 
   function place(real:Node) {
     if (cur == null)
@@ -91,7 +96,9 @@ private class DomCursor extends Cursor<Node> {
         for (k in handler.keys())
           v.removeEventListener(k, handler[k]);
       }
+      #if !coconut.vdom.ignore_translators
       js.Syntax.delete(v, '__coconutText');// a removed node that comes back (a pooled marker) is a fresh insert
+      #end
       var next = v.nextSibling;
       parent.removeChild(v);
       v = next;
@@ -99,6 +106,7 @@ private class DomCursor extends Cursor<Node> {
     cur = v;
   }
 
+  #if !coconut.vdom.ignore_translators
   // A text node this renderer inserted and did not remove, now out of the page: someone else took it out. Page
   // translators do that, putting a text node with the translation in its place (Safari, Edge, Firefox) or a <font>
   // element (Google).
@@ -115,6 +123,7 @@ private class DomCursor extends Cursor<Node> {
       if (n != null && (n.nodeType == Node.TEXT_NODE || n.nodeName == 'FONT')) n;
       else null;
   }
+  #end
 
   #if !coconut.vdom.terse_assert
   // The node is gone or was moved by something else (browser translation, extensions, direct DOM changes): say where.
